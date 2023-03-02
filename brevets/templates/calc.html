@@ -168,22 +168,20 @@
                         // by class (listitem). Class is better because it's more specific in this case.
                         // And we don't want to accidentally pick up the table header row.
                         $('.control').each(function() {
-                            // Find the row object
                             var item = $(this);
-
                             var close_time_field = item.find("input[name='close']").val();
                             var open_time_field = item.find("input[name='open']").val();
                             var km = item.find("input[name='km']").val();
-                            close_time_field = item.find("input[name='close']").val('');
-                            open_time_field = item.find("input[name='open']").val('');
-                            km = item.find("input[name='km']").val('');
-
+                            var miles = item.find("input[name='miles']").val();
+                            var location = item.find("input[name='location']").val();
                             if (km) {
                                 // Construct a dictionary
                                 item_json = {
                                     "close_time_field": close_time_field, 
                                     "open_time_field": open_time_field,
-                                    "km": km 
+                                    "km": km,
+                                    "miles": miles,
+                                    "location": location
                                 }
                                 // Push to list
                                 items.push(item_json);
@@ -196,21 +194,12 @@
                             "items": items};
 
                         $.ajax({
-                          // Expect JSON responses from our backend
-                          dataType: 'json', // expected output format (getJSON sets this as well)
-                          // Specify we're sending JSON as well
+                          dataType: 'json',
                           contentType: "application/json",
-                          // Request method: POST
                           type: 'POST',
-                          // URL: specified above
                           url: INSERT_URL,
-                          // Important step that we didn't use to do in P4:
-                          // Convert our constructed dictionary to a JSON string!
                           data: JSON.stringify(new_brevet_list),
-                          // On a successful response from flask:
                           success: function(data) {
-                              // Check the status code we set in Flask
-                              // Recall: 1 was success, 0 was failure
                               if (data.status == 1) {
                                   console.log("Successfully inserted! Response: ", data);
                               }
@@ -218,7 +207,6 @@
                                   console.log("Insertion failed: ", data);
                               }
                            },
-                          // On error
                           error: function(err){
                            console.log("Error: ", err); }
                         });
@@ -227,10 +215,6 @@
                 $('#fetch').click(
                     function(event) {
                         event.preventDefault();
-                        // We use getJSON because we're sending a GET request.
-                        // getJSON is essentially running $.ajax as well, but sets the defaults for us.
-                        // So we're just using it for convenience.
-                        // Feel free to replace it with a $.ajax call like the one in #insert.
                         $.getJSON(FETCH_URL).done(
                           function(data) {
                              console.log(data);
@@ -248,11 +232,16 @@
                                       litem.find("input[name='close']").val('');
                                       litem.find("input[name='open']");
                                       litem.find("input[name='km']");
+                                      litem.find("input[name='miles']");
+                                      litem.find("input[name='location']");
+
                                       // Check if we're already done?
                                       if (index < num_items) {
                                           litem.find("input[name='close']").val(items[index].close_time_field);
                                           litem.find("input[name='open']").val(items[index].open_time_field);
                                           litem.find("input[name='km']").val(items[index].km);
+                                          litem.find("input[name='miles']").val(items[index].miles);
+                                          litem.find("input[name='location']").val(items[index].location);
                                       }
                                   });
                               }
