@@ -174,6 +174,13 @@
                             var km = item.find("input[name='km']").val();
                             var miles = item.find("input[name='miles']").val();
                             var location = item.find("input[name='location']").val();
+
+                            item.find("input[name='close']").val('');
+                            item.find("input[name='open']").val('');
+                            item.find("input[name='km']").val('');
+                            item.find("input[name='miles']").val('');
+                            item.find("input[name='location']").val('');
+
                             if (km) {
                                 // Construct a dictionary
                                 item_json = {
