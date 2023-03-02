@@ -9,7 +9,7 @@ from flask import request
 import arrow  # Replacement for datetime, based on moment.js
 import acp_times  # Brevet time calculations
 import config
-
+from mypymongo import brevet_insert, brevet_find
 import logging
 
 ###
@@ -72,6 +72,38 @@ def _calc_times():
     result = {"open": open_time, "close": close_time}
     return flask.jsonify(result=result)
 
+@app.route("/insert", methods=["POST"])
+def insert():
+    try:
+        input_json = request.json
+        brevet_dist_km = input_json["brevet_dist_km"] # Should be a string
+        begin_date = input_json["begin_date"] # Should be a string
+        items = input_json["items"] # Should be a list of dictionaries
+
+        brevet_id = brevet_insert(brevet_dist_km, begin_date, items)
+
+        return flask.jsonify(result={},
+                        message="Inserted!", 
+                        status=1,
+                        mongo_id=brevet_id)
+    except:
+        return flask.jsonify(result={},
+                        message="Oh no! Server error!", 
+                        status=0, 
+                        mongo_id='None')
+@app.route("/fetch")
+def fetch():
+    try:
+        brevet_dist_km, begin_date, items = brevet_find()
+        return flask.jsonify(
+                result={"brevet_dist_km": brevet_dist_km, "begin_date": begin_date, "items": items}, 
+                status=1,
+                message="Successfully fetched a brevet list!")
+    except:
+        return flask.jsonify(
+                result={}, 
+                status=0,
+                message="Something went wrong, couldn't fetch any lists!")
 
 #############
 

@@ -65,6 +65,8 @@
                <div class="col-md-6">
                   <label>Begins at</label>
                   <input type="datetime-local" name="begin_date" id="begin_date" value="2021-01-01 00:00" />
+                  <button id="insert">Submit</button>
+                  <button id="fetch">Display</button>
                </div>
                <!-- columns 5 to 10 -->
             </div>
@@ -114,6 +116,8 @@
          <script type="text/javascript">
             var SCRIPT_ROOT = {{ request.script_root|tojson|safe }} ;
             var TIME_CALC_URL = SCRIPT_ROOT + "/_calc_times";
+            var FETCH_URL = SCRIPT_ROOT + "/fetch";
+            var INSERT_URL = SCRIPT_ROOT + "/insert";
             // FIX ME!
             // Right now, only the kilometers are passed
             // you need to pass much more!
@@ -131,9 +135,6 @@
               $.getJSON(TIME_CALC_URL, {km: km, begin_date: begin_date, brevet_dist_km: brevet_dist_km}).done(
                 function(data) {
                    var times = data.result;
-                   begin_date = control.find("input[name='begin_date']").val();
-                   brevet_dist_km = control.find("input[name='brevet_dist_km']").val();
-
                    console.log("Got a response: ");
                    console.log("Response.open = " + times.open);
 
@@ -152,7 +153,119 @@
 
             $(document).ready(function(){
              // Do the following when the page is finished loading
+                $('#insert').click(
+                    function(event) {
+                        event.preventDefault();
+                        // Referencing by tag type (input) and attribute (name)
+                        // Notice the difference between this and referencing by class (.)
+                        // and referencing by id (#).
+                        var begin_date = $("#begin_date").val();
+                        var brevet_dist_km = $("#brevet_dist_km").val();
 
+                        // Empty array of list items that we will fill with a for loop
+                        var items = [];
+                        // For every row (go to line 52 and see ways to reference rows: by tag (tr) or
+                        // by class (listitem). Class is better because it's more specific in this case.
+                        // And we don't want to accidentally pick up the table header row.
+                        $('.control').each(function() {
+                            // Find the row object
+                            var item = $(this);
+
+                            var close_time_field = item.find("input[name='close']").val();
+                            var open_time_field = item.find("input[name='open']").val();
+                            var km = item.find("input[name='km']").val();
+                            close_time_field = item.find("input[name='close']").val('');
+                            open_time_field = item.find("input[name='open']").val('');
+                            km = item.find("input[name='km']").val('');
+
+                            if (km) {
+                                // Construct a dictionary
+                                item_json = {
+                                    "close_time_field": close_time_field, 
+                                    "open_time_field": open_time_field,
+                                    "km": km 
+                                }
+                                // Push to list
+                                items.push(item_json);
+                            }
+                        });
+
+                        var new_brevet_list = {
+                            "brevet_dist_km": brevet_dist_km,
+                            "begin_date": begin_date,
+                            "items": items};
+
+                        $.ajax({
+                          // Expect JSON responses from our backend
+                          dataType: 'json', // expected output format (getJSON sets this as well)
+                          // Specify we're sending JSON as well
+                          contentType: "application/json",
+                          // Request method: POST
+                          type: 'POST',
+                          // URL: specified above
+                          url: INSERT_URL,
+                          // Important step that we didn't use to do in P4:
+                          // Convert our constructed dictionary to a JSON string!
+                          data: JSON.stringify(new_brevet_list),
+                          // On a successful response from flask:
+                          success: function(data) {
+                              // Check the status code we set in Flask
+                              // Recall: 1 was success, 0 was failure
+                              if (data.status == 1) {
+                                  console.log("Successfully inserted! Response: ", data);
+                              }
+                              else {
+                                  console.log("Insertion failed: ", data);
+                              }
+                           },
+                          // On error
+                          error: function(err){
+                           console.log("Error: ", err); }
+                        });
+                    }
+                );
+                $('#fetch').click(
+                    function(event) {
+                        event.preventDefault();
+                        // We use getJSON because we're sending a GET request.
+                        // getJSON is essentially running $.ajax as well, but sets the defaults for us.
+                        // So we're just using it for convenience.
+                        // Feel free to replace it with a $.ajax call like the one in #insert.
+                        $.getJSON(FETCH_URL).done(
+                          function(data) {
+                             console.log(data);
+                              if (data.status == 1) {
+                                  console.log("Successfully fetched: ", data);
+                                  var begin_date = $("#begin_date").val(data.result.begin_date);
+                                  var brevet_dist_km = $("#brevet_dist_km").val(data.result.brevet_dist_km);
+                                  var items = data.result.items;
+                                  var num_items = items.length;
+
+                                  // For each row in the HTML table
+                                  $('.control').each(function(index) {
+                                      var litem = $(this); // This is our row
+                                      // Clear existing values
+                                      litem.find("input[name='close']").val('');
+                                      litem.find("input[name='open']");
+                                      litem.find("input[name='km']");
+                                      // Check if we're already done?
+                                      if (index < num_items) {
+                                          litem.find("input[name='close']").val(items[index].close_time_field);
+                                          litem.find("input[name='open']").val(items[index].open_time_field);
+                                          litem.find("input[name='km']").val(items[index].km);
+                                      }
+                                  });
+                              }
+                              else {
+                                  console.log("Fetch failed: ", data);
+                              }
+                           }
+                         ).fail(function(err){
+                           // In case you get an error...
+                           console.log("Error: ", err);
+                         });
+                    }
+                );
                 $('input[name="miles"]').change(
                    function() {
                        var miles = parseFloat($(this).val());
